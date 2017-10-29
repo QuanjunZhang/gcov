@@ -5,7 +5,9 @@
 创建测试代码 `vim test`
 
 - 编译
-`gcc -fprofile-arcs -ftest-coverage test.c -o test`
+```bash
+gcc -fprofile-arcs -ftest-coverage test.c -o test
+```
 会生成`test`和`test.gcno`文件
 
 
@@ -61,4 +63,56 @@ gcov是测试代码覆盖率的工具，在使用gcc编译的时候加上`-fprof
 
 gcov(gcc coverage)是一个测试代码覆盖率工具，可以统计每一行代码的执行次数以及耗时。
 
-# aaAaaa
+# 插桩原理
+## 编译插桩过程
+分为四个过程：预处理；编译插桩；汇编；链接
+分别生成四种文件：预处理文件；汇编文件；目标文件；可执行文件
+![chazhuang.png](./lib/chazhuang.png)
+- 预处理：预处理程序对源文件进行预处理，生成预处理文件(`.i`文件)
+- 编译插桩：编译插桩程序对预处理文件进行编译插桩，生成汇编文件(`.s`文件)
+- 汇编：汇编程序对编译文件进行汇编，生成目标文件(`.o`文件)
+- 链接：链接程序对目标文件进行链接，生成可执行文件(`.out`或`.elf`文件)
+
+具体命令;
+- `cpp test.c -o test.i`：预处理，传入`.c`文件，生成`.i`
+- `gcc -S test.i`：编译插桩：传入`.i`文件，生成`.s`文件
+- `as -o test.0 test.s`：汇编：传入`.i`文件，生成`.o`文件
+- `gcc -o test test.o`：链接：传入`.o`文件，生成`test`可执行文件
+
+## 插桩对比
+我们可以知道，无需插桩情况下命令是
+```bash
+  gcc test.c -o test
+```
+直接由源文件生成可执行文件
+需要插则是
+```bash
+gcc -fprofile-arcs -ftest-coverage test.c -o test
+```
+可以发现`-fprofile-arcs -ftest-coverage`就是让gcc完成插桩的关键
+`-fprofile-arcs `会产生`.gcno`文件，在gcov种，会读取该文件，重组每一个可执行程序的程序流图
+`-ftest-coverage`会产生`.gcda`文件，该文件包含每个指令分之的执行次数信息。
+相比与未插桩，插桩时会多出一些上诉的数据文件，基本流程如图：
+
+![gcov过程.PNG](./lib/gcov过程.PNG)
+上图中的`.ba`和`.bbg`文件，后期gcc版本变成了`.gcno`文件；
+当我们之后运行可执行文件(`./test`)，会产生`.da`文件，后期版本变成了`.gcda`文件。
+
+下面将在`.s`汇编文件种比较插桩前后的汇编代码。
+对于源文件`test.c`
+```c
+int main (void)
+{
+    int i, total;
+    total = 0;
+    
+    for (i = 0; i < 10; i++)
+        total += i;
+ 
+    if (total != 45)
+        printf ("Failure\n");
+    else
+        printf ("Success\n");
+    return 0;
+}
+```
