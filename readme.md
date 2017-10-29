@@ -26,7 +26,7 @@
 ![fugailv.png](./lib//fugailv.png)
 会生成`.c.gcov`和`.info`文件
 
-![info.png](/./lib//info.png)
+![info.png](./lib//info.png)
 
 - 生成html报告文档
 `genhtml test.info -o ./output`
@@ -41,4 +41,4 @@
 ![daiam.png](./lib//daiam.png)
 
 # 简介
-[源码](#SourceCode/gcc.c)
+[源码](./SourceCode/gcc.c)
