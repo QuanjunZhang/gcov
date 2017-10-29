@@ -1,0 +1,47 @@
+        -:    0:Source:test.c
+        -:    0:Graph:test.gcno
+        -:    0:Data:test.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include<stdio.h>
+        -:    2:#include<stdlib.h>
+        -:    3:#include<string.h>
+        1:    4:int* twoSum(int* nums, int numsSize, int target) {
+        1:    5:    int loop = 0;
+        1:    6:    int inloop = 0;
+        1:    7:    int* result = NULL;
+        1:    8:    result =(int*) malloc(2*sizeof(int));
+        1:    9:    memset(result,0,2*sizeof(int));
+        1:   10:    printf("numsSize=%d\n",numsSize);
+        1:   11:    if(NULL == nums || numsSize==0)
+        -:   12:    {
+    #####:   13:        return result;
+        -:   14:    }
+        -:   15:
+        1:   16:    for(loop = 0;loop < numsSize;loop++)
+        -:   17:    {
+        1:   18:        for(inloop = loop+1;inloop <numsSize;inloop++)
+        -:   19:        {
+        1:   20:            if(*(nums+loop)+*(nums+inloop) == target)
+        -:   21:            {
+        1:   22:                if(NULL != result)
+        -:   23:                {
+        -:   24:
+        1:   25:                    *result = loop;
+        1:   26:                    *(result+1) = inloop;
+        -:   27:                }
+        1:   28:                return result;
+        -:   29:            }
+        -:   30:        }
+        -:   31:    }
+    #####:   32:    return result;
+        -:   33:}
+        -:   34:
+        1:   35:int main(int arg,char argv[])
+        -:   36:{
+        1:   37:    int nums[4]={2,7,11,15};
+        1:   38:    int target = 9;
+        1:   39:    int numsSize = 4;
+        1:   40:    int* result = twoSum(nums,numsSize,target);
+        1:   41:    printf("index1:%d\nindex2:%d\n",*result,*(result+1));
+        -:   42:}

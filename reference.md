@@ -14,7 +14,7 @@
 
 10.29
 
-[lingshi](http://blog.csdn.net/21cnbao/article/details/40268617)
+[覆盖率测试工具gcov的前端工具_LCOV_简介](http://blog.csdn.net/21cnbao/article/details/40268617)
 
 [Linux平台代码覆盖率测试工具GCOV简介](http://www.linuxidc.com/Linux/2011-05/36545.htm)
 
