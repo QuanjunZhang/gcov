@@ -43,3 +43,6 @@
 # 简介
 [源码](./SourceCode/gcc.c)
 [shili](#示例)
+[#SourceCode](#SourceCode)
+[./SourceCode](./SourceCode)
+[/SourceCode](/SourceCode)
