@@ -11,19 +11,19 @@ gcc -fprofile-arcs -ftest-coverage test.c -o test
 会生成`test`和`test.gcno`文件
 
 
-![gcno.png](./lib/gcno.png)
+![gcno.png](./picture/gcno.png)
 
 - 运行
 `./test`
 生成`.gcna`文件
-![2017-10-28 11-05-11屏幕截图.png](./lib/2017-10-28 11-05-11屏幕截图.png)
+![2017-10-28 11-05-11屏幕截图.png](./picture/2017-10-28 11-05-11屏幕截图.png)
 
 **这个时候我们可以使用`gcov`生成`*.c.gcov`文件查看具体覆盖信息，也可以使用`lcov`生成html页面查看覆盖率报告**
 
 ## 收集信息
 - `gcov test.c`生成`test.c.gcov`文件，里面包含了具体的源码执行信息。
 
-![gcov.png](./lib/gcov.png)
+![gcov.png](./picture/gcov.png)
 
 
 ## 前端展示覆盖率
@@ -37,22 +37,22 @@ gcc -fprofile-arcs -ftest-coverage test.c -o test
 	- `.`：当前目录
 
 
-![fugailv.png](./lib//fugailv.png)
+![fugailv.png](./picture//fugailv.png)
 会生成`.c.gcov`和`.info`文件
 
-![info.png](./lib//info.png)
+![info.png](./picture//info.png)
 
 - 生成html报告文档
 `genhtml test.info -o ./output`
 	- `test.info`：用来生成报告的源文件
 	- `-o`：生成结果的目录
 
-![shengcheng.png](./lib//shengcheng.png)
+![shengcheng.png](./picture//shengcheng.png)
 之后产生`ouput`文件夹，里面包含了覆盖率报告
 
-![baogao.png](./lib//baogao.png)
+![baogao.png](./picture//baogao.png)
 
-![daiam.png](./lib//daiam.png)
+![daiam.png](./picture//daiam.png)
 
 # 简介
 
@@ -67,7 +67,7 @@ gcov(gcc coverage)是一个测试代码覆盖率工具，可以统计每一行�
 ## 编译插桩过程
 分为四个过程：预处理；编译插桩；汇编；链接
 分别生成四种文件：预处理文件；汇编文件；目标文件；可执行文件
-![chazhuang.png](./lib/chazhuang.png)
+![chazhuang.png](./picture/chazhuang.png)
 - 预处理：预处理程序对源文件进行预处理，生成预处理文件(`.i`文件)
 - 编译插桩：编译插桩程序对预处理文件进行编译插桩，生成汇编文件(`.s`文件)
 - 汇编：汇编程序对编译文件进行汇编，生成目标文件(`.o`文件)
@@ -94,25 +94,29 @@ gcc -fprofile-arcs -ftest-coverage test.c -o test
 `-ftest-coverage`会产生`.gcda`文件，该文件包含每个指令分之的执行次数信息。
 相比与未插桩，插桩时会多出一些上诉的数据文件，基本流程如图：
 
-![gcov过程.PNG](./lib/gcov过程.PNG)
+![gcov过程.PNG](./picture/gcov过程.PNG)
 上图中的`.ba`和`.bbg`文件，后期gcc版本变成了`.gcno`文件；
 当我们之后运行可执行文件(`./test`)，会产生`.da`文件，后期版本变成了`.gcda`文件。
 
 下面将在`.s`汇编文件种比较插桩前后的汇编代码。
 对于源文件`test.c`
 ```c
-int main (void)
-{
-    int i, total;
-    total = 0;
-    
-    for (i = 0; i < 10; i++)
-        total += i;
- 
-    if (total != 45)
-        printf ("Failure\n");
-    else
-        printf ("Success\n");
-    return 0;
-}
+00001: #include
+00002:
+00003: int main ( void )
+00004: {
+00005:    int i , total ;
+00006:
+00007:    total = 0 ;
+00008:
+00009:    for ( i = 0 ; i < 10 ; i ++ )
+00010:    total += i ;
+00011:
+00012:    if ( total != 45 )
+00013:        printf ( "Failure\n" );
+00014:    else
+00015:        printf ( "Success\n" );
+00016:    return 0 ;
+00017: }
+00018:
 ```
