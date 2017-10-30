@@ -14,15 +14,9 @@ gcc -fprofile-arcs -ftest-coverage test.c -o test
 ![gcno.png](./picture/gcno.png)
 
 - 运行
-<<<<<<< HEAD
 `./test`
 生成`.gcna`文件
 ![2017-10-28 11-05-11屏幕截图.png](./picture/2017-10-28 11-05-11屏幕截图.png)
-=======
-  `./test`
-  生成`.gcna`文件
-  ![2017-10-28 11-05-11屏幕截图.png](./lib/2017-10-28 11-05-11屏幕截图.png)
->>>>>>> 935dd6ab43de59f2e9e9a2839ab2faefccc11fa0
 
 **这个时候我们可以使用`gcov`生成`*.c.gcov`文件查看具体覆盖信息，也可以使用`lcov`生成html页面查看覆盖率报告**
 
@@ -126,5 +120,3 @@ gcc -fprofile-arcs -ftest-coverage test.c -o test
 00017: }
 00018:
 ```
-
-你说呢
