@@ -418,7 +418,7 @@ main:
     .size    main, .-main  
   
     #以下部分均是加入coverage选项后编译器加入的桩代码  
-  
+<font color="#FF0000">我是红色字体</font> 
     .local   .LPBX1  
     .comm    .LPBX1,40,32  
   
