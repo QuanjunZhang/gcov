@@ -151,7 +151,7 @@ test.gcda:data:magic `gcda':version `401p'
 test.gcda:stamp 3320622649  //对应下面的0xc5ecae39  
 test.gcda: 01000000:   2:FUNCTION ident=3, checksum=0xeb65a768  //tag, length=2, ident, checksum  
 test.gcda:  01a10000:  10:COUNTERS arcs 5 counts  //tag, length=10, 5个COUNTERS  
-test.gcda:              0 10 0 1 0 1  //此处便是5个counter，共40字节  
+test.gcda:              0 10 0 1 0 1  //此处便是5个counter的值，共40字节  
 test.gcda: a1000000:   9:OBJECT_SUMMARY checksum=0x00000000  
 test.gcda:              counts=5, runs=1, sum_all=12, run_max=10, sum_max=10  
 test.gcda: a3000000:   9:PROGRAM_SUMMARY checksum=0x51924f98  
@@ -202,7 +202,7 @@ test.gcda:
 
 dump后：
 
-```c
+```assembly
 # /home/zubo/gcc/2011-04-11.gcov-dump/gcov-dump test.gcno  
   
 //magic:version，和stamp，对应下面的0xc5ecae39，与test.gcda一一对应  
@@ -235,6 +235,7 @@ test.gcno:      block 6: 7:0004 8:0003
 test.gcno:  01430000:   3:ARCS 1 arcs  
 test.gcno:      block 7: 8:0001  
   
+  //说明每个块的具体行
 //以下为6个LINES记录，小写的block为提示信息，大写的LINES为tag名字  //说明line分为6部分，分别位于block1,2,4,5,6,7
 test.gcno:  01450000:  10:LINES           //tag=0x01450000:length=10:tagname=LINES  
 test.gcno:      block 1:`test.c':4, 7, 9  //blockno=1:'文件名':lineno1=4,lineno2=7,lineno3=9  
@@ -250,7 +251,7 @@ test.gcno:  01450000:   8:LINES
 test.gcno:      block 7:`test.c':16 
 ```
 
-### 程序块流图
+### 基本块流图
 
 这里我们可以发现程序分为了9个block，各个block的arcs关系也列出来了，那么我们可以输出它的程序块流图。
 
@@ -260,6 +261,8 @@ test.gcno:      block 7:`test.c':16
 
 ![blockarcs](./picture/blockarcs.png)
 
+这边关于for循环，我们可以发现BB1和BB2都有line9，for循环首先是执行初始化语句，之后执行判断语句，返回true则执行循环体语句，之后执行循环迭代语句，再次进入判断语句。故BB1进行`i=0`初始化，BB2进行`i<10`判断，BB3进行`i++`循环迭代语句和`total+=10`循环体语句。
+
 ## 插桩对比
 
 ### 未插桩汇编代码
@@ -268,7 +271,7 @@ test.gcno:      block 7:`test.c':16
 gcc -s test.i
 ```
 
-```
+```assembly
  .file    "test.c"  
     .section    .rodata  
 .LC0:  
@@ -325,7 +328,7 @@ main:
 gcc-fprofile-arcs -ftest-coverage-S test.i
 ```
 
-```
+```assembly
  .file      "test.c"  
     .section   .rodata  
 .LC0:  
@@ -348,14 +351,17 @@ main:
     movl    $0, -12(%ebp)    #初始化循环变量i=0,i的值在-12(%ebp)中  
     jmp    .L2  
   
-.L3:                         #以下这几句就是插入的桩代码  
+.L3:     
+  #第一次插桩：以下这几句就是插入的桩代码
     movl    .LPBX1, %eax     #将.LPBX1移到%eax，即%eax=.LPBX1  
     movl    .LPBX1+4, %edx   #edx=.LPBX1+4  
     addl    $1, %eax         #eax=%eax+1  
     adcl    $0, %edx         #edx=%edx+0  
     movl    %eax, .LPBX1     #将%eax移回.LPBX1  
     movl    %edx, .LPBX1+4   #将%edx移回.LPBX1+4  
+  #第一次插桩结束
   
+  #这是BB2的执行代码，故第一次插桩在BB3到BB2中
     movl    -12(%ebp), %eax  #将i的值移到%eax中，即%eax=i  
     addl    %eax, -8(%ebp)   #将%eax的值加到-8(%ebp)，total=total+i  
     addl    $1, -12(%ebp)    #循环变量加1，即i++  
@@ -366,39 +372,44 @@ main:
     cmpl    $45, -8(%ebp)    #否则，比较total的值与45的大小  
     je     .L5               #若total=45，跳到.L5  
   
-    #以下也为桩代码  
+  #第二次插桩：以下也为桩代码  
     movl    .LPBX1+8, %eax   #eax=.LPBX1+8  
     movl    .LPBX1+12, %edx  #edx=.LPBX1+12  
     addl    $1, %eax         #eax=%eax+1  
     adcl    $0, %edx         #edx=%edx+0  
     movl    %eax, .LPBX1+8   #将%eax移回.LPBX1+8  
     movl    %edx, .LPBX1+12  #将%eax移回.LPBX1+12  
-  
+  #第二次结束
+  #这是BB5的代码，故第二次插桩在BB4到BB5中
     movl    $.LC0, (%esp)    #否total的值不为45，则将$.LC0放入%esp  
     call    puts             #输出Failure  
   
-    #以下也为桩代码，功能同上，不再解释  
+  #第三部分插桩：以下也为桩代码，功能同上，不再解释  
     movl    .LPBX1+24, %eax  
     movl    .LPBX1+28, %edx  
     addl    $1, %eax  
     adcl    $0, %edx  
     movl    %eax, .LPBX1+24  
     movl    %edx, .LPBX1+28  
-  
+ #第三部分结束
+ 
+ #这部分是BB7的代码，故第三次插桩在BB5到BB7中间
     jmp    .L7               #跳到.L7  
   
 .L5:  
-    #以下也为桩代码，功能同上，不再解释  
+ #第四：以下也为桩代码，功能同上，不再解释  
     movl    .LPBX1+16, %eax  
     movl    .LPBX1+20, %edx  
     addl    $1, %eax  
     adcl    $0, %edx  
     movl    %eax, .LPBX1+16  
     movl    %edx, .LPBX1+20  
-  
+ #第四结束
+ 
+ #这是BB6代码，故第四次插桩在BB4到BB6中
     movl    $.LC1, (%esp)    #将$.LC1放入%esp  
     call    puts             #输出Success  
-  
+ #第五 
     #以下也为桩代码，功能同上，不再解释  
     movl    .LPBX1+32, %eax  
     movl    .LPBX1+36, %edx  
@@ -406,9 +417,11 @@ main:
     adcl    $0, %edx  
     movl    %eax, .LPBX1+32  
     movl    %edx, .LPBX1+36  
-  
+  # 第五结束
+  #此部分后为BB7执行代码，故第五次插桩在BB6到BB7之间
 .L7:  
     movl    $0, %eax         #返回值0放入%eax  
+    
     addl    $20, %esp        #这几句回复现场  
     popl    %ecx  
     popl    %ebp  
@@ -416,24 +429,32 @@ main:
     ret  
   
     .size    main, .-main  
-  
-    #以下部分均是加入coverage选项后编译器加入的桩代码  
-<font color="#FF0000">我是红色字体</font> 
+ 
+ #以下部分均是加入coverage选项后编译器加入的桩代码  
+ 
+ #定义LPBX1，存放前五段桩代码
     .local   .LPBX1  
-    .comm    .LPBX1,40,32  
-  
+    .comm    .LPBX1,40,32  #申请命名空间，名称为.LPBX1
     .section .rodata      #只读section  
-    .align   4  
+    .align   4  #.align的作用在于对指令或者数据的存放地址进行对齐
+ #LPBX1定义完成
+ 
+ #定义文件名
 .LC2:                     #文件名常量，只读  
     .string  "/home/zubo/gcc/test/test.gcda"  
   
     .data                 #data数据段  
     .align   4  
+  #文件定义完成
+  
+  #定义functions结构
 .LC3:  
     .long    3            #ident=3  
     .long    -345659544   #即checksum=0xeb65a768  
     .long    5            #counters  
+  #functions定义完成
   
+  #定义LPBX0结构
     .align   32  
     .type    .LPBX0, @object #.LPBX0是一个对象  
     .size    .LPBX0, 52   #.LPBX0大小为52字节  
@@ -449,7 +470,9 @@ main:
     .long    .LPBX1       #values指针，指向.LPBX1，即5个counter的内容在.LPBX1结构中  
     .long    __gcov_merge_add #merge指针，指向__gcov_merge_add函数  
     .zero    12           #应该是12个0  
+  #定义完成
   
+  #第六段插桩代码
     .text                                  #text代码段  
     .type    _GLOBAL__I_0_main, @function  #类型是function  
 _GLOBAL__I_0_main:                         #以下是函数体  
@@ -461,6 +484,7 @@ _GLOBAL__I_0_main:                         #以下是函数体
     call     __gcov_init       #调用__gcov_init  
     leave  
     ret  
+  #插桩结束，将LPBX0做参数，调用__gcov_init函数
   
     .size    _GLOBAL__I_0_main, .-_GLOBAL__I_0_main  
     .section    .ctors,"aw",@progbits      #该函数位于ctors段  
@@ -471,5 +495,85 @@ _GLOBAL__I_0_main:                         #以下是函数体
    
    .ident    "GCC: (GNU) 4.1.2 20070925 (Red Hat 4.1.2-33)"  
    .section    .note.GNU-stack,"",@progbits  
+```
+
+### 带桩点基本块流图
+
+可以发现具体出现了5处插桩代码（其实六处，最后一处先不谈），根据注释的解释，可以发现每个插桩点的位置。
+
+| 插桩点   | 出发BB | 目的BB | 执行次数 | 插入位置   |
+| ----- | ---- | ---- | ---- | ------ |
+| stub1 | BB3  | BB2  | 10   | 10行代码前 |
+| stub2 | BB4  | BB5  | 0    | 13行代码前 |
+| stub3 | BB5  | BB7  | 0    | 13行代码后 |
+| stub4 | BB4  | BB6  | 1    | 15行代码前 |
+| stub5 | BB6  | BB7  | 1    | 15行代码后 |
+
+那么我们可以更进步画出基本块流图。
+
+![](./picture/带桩点基本块流图.png)
+
+### 桩点分析
+
+之前的五处插桩我们发现都很类似，以第一处为例。
+
+```assembly
+    movl    .LPBX1, %eax     #将.LPBX1移到%eax，即%eax=.LPBX1  
+    movl    .LPBX1+4, %edx   #edx=.LPBX1+4  
+    addl    $1, %eax         #eax=%eax+1  
+    adcl    $0, %edx         #edx=%edx+0  
+    movl    %eax, .LPBX1     #将%eax移回.LPBX1  
+    movl    %edx, .LPBX1+4   #将%edx移回.LPBX1+4 
+```
+
+这里拥有一个.LPBX1的数组，每次执行到这个就将其加1，充当了一个计数器的功能。每一个计数器是.LPBX1和LPBX1+4共计8字节的数组。下方定义了这个数组
+
+```assembly
+#定义LPBX1，存放前五段桩代码
+    .local   .LPBX1  
+    .comm    .LPBX1,40,32  #申请命名空间，名称为.LPBX1
+    .section .rodata      #只读section  
+    .align   4  #.align的作用在于对指令或者数据的存放地址进行对齐
+ #LPBX1定义完成
+```
+
+其属性只读，长度为40字节，共5个counter，每个counter占8字节，他们以4字节的方式对其。我们在上一节可以知道每个桩点具体的执行次数。
+| 插桩点   | 出发BB | 目的BB | 执行次数 | 插入位置   | 在.LPBX1位置  |
+| ----- | ---- | ---- | ---- | ------ | ---------- |
+| stub1 | BB3  | BB2  | 10   | 10行代码前 | .LPBX1+0处  |
+| stub2 | BB4  | BB5  | 0    | 13行代码前 | .LPBX1+8处  |
+| stub3 | BB5  | BB7  | 0    | 13行代码后 | .LPBX1+24处 |
+| stub4 | BB4  | BB6  | 1    | 15行代码前 | .LPBX1+16处 |
+| stub5 | BB6  | BB7  | 1    | 15行代码后 | .LPBX1+32处 |
+
+那么我们可以知道.LPBX1数组的具体信息。 
+
+| +0   | +4   | +8   | +12  | +16  | +20  | +24  | +28  | +32  | +36  |
+| ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| 10   | 0    | 0    | 0    | 1    | 0    | 0    | 0    | 1    | 0    |
+
+然后这些值被作为counter写入test.gcda文件，上文的gcda文件可以发现：
+
+```assembly
+test.gcda:  01a10000:  10:COUNTERS arcs 5 counts  //tag, length=10, 5个COUNTERS  
+test.gcda:              0 10 0 1 0 1  //此处便是5个counter的值，共40字节  
+```
+
+下面看关于最后一段插桩代码分析
+
+```assembly
+ #第六段插桩代码
+    .text                                  #text代码段  
+    .type    _GLOBAL__I_0_main, @function  #类型是function  
+_GLOBAL__I_0_main:                         #以下是函数体  
+    pushl    %ebp  
+    movl     %esp, %ebp  
+    subl     $8, %esp  
+    movl     $.LPBX0, (%esp)   #将$.LPBX0，即.LPBX0的地址，存入%esp所指单元  
+                               #实际上是为下面调用__gcov_init准备参数,即gcov_info结构指针  
+    call     __gcov_init       #调用__gcov_init  
+    leave  
+    ret  
+  #插桩结束，将LPBX0做参数，调用__gcov_init函数
 ```
 
